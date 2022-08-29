@@ -69,7 +69,7 @@ README.md: this.
 
 Authors
 
-Abdullahi Abiodun Toheeb
+Abdullahi Abiodun Toheeb,
 Emaye Olugbenga Andrew
 
 
