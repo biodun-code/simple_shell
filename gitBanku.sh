@@ -1,14 +1,12 @@
 #!/bin/bash
 echo " "
-echo "--------------welcome to Git Banku--------------
-"
-                                           
-function welcome 
+echo "--------------welcome to Git Banku--------------"
+function welcome
 {
 echo "------------------------------------------------"
-echo "Please select prefered action 
+echo "Please select prefered action
 "
-echo "1)Clone 
+echo "1)Clone
 "
 echo "2)Config
 "
@@ -32,7 +30,7 @@ do
 	choose
 done
 
-function clone 
+function clone
 {
 read -p "Username: " userName
 read -p "git Key: " key
@@ -70,7 +68,7 @@ git commit -m "$msg"
 git push
 }
 
-function start 
+function start
 {
 if (( $command == 1 ))
 then
