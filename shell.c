@@ -1,103 +1,87 @@
-#include "shell.h"
+#include "main.h"
 
 /**
- * main - Entry point to the shell program
- * @argc: Number of command line arguments
- * @argv: Argument vector
- * @envp: environment variable
- *
- * Return: Always 0
- *
+ * execute - executes the command
+ * @cmd: command to run
+ * Return: 0 on success1 -1 if cmd is exit and 1 on any other error
  */
-
-int main(int argc, char *argv[], char *envp[])
+int execute(char **cmd)
 {
-	char *lineptr = NULL, *pathcmd = NULL, *path = NULL;
-	size_t buffer_size = 0;
-	ssize_t num_chars_read = 0;
-	char **cmd = NULL, **paths = NULL;
-	(void) envp, (void) argv;
 
-	if (argc < 1)
+	pid_t child_pid;
+	int status;
+
+	if (strncmp("exit", cmd[0], 4) == 0)
 		return (-1);
-	signal(SIGINT, handle_sig);
-	while (1)
+
+	child_pid = fork();
+
+	if (child_pid == -1)
 	{
-		free_cmds(cmd);
-		free_cmds(paths);
-		free(pathcmd);
-		prompt_printer();
-		num_chars_read = getline(&lineptr, &buffer_size, stdin);
-		if (num_chars_read < 0)
-			break;
-		info.ln_count++;
-		if (lineptr[num_chars_read - 1] == '\n')
-			lineptr[num_chars_read - 1]  = '\0';
-		cmd = tokenize(lineptr);
-		if (cmd == NULL || *cmd == NULL || **cmd == '\0')
-			continue;
-		if (cmd_type(cmd, lineptr))
-			continue;
-		path = _getpath();
-		paths = tokenize(path);
-		pathcmd = search_path(paths, cmd[0]);
-		if (pathcmd == NULL)
-			perror(argv[0]);
-		else
-			exec_cmd(pathcmd, cmd);
+		perror("Error");
+		return (1);
 	}
-	if (num_chars_read < 0 && flags.interactive)
-		write(STDERR_FILENO, "\n", 1);
-	free(lineptr);
+	else if (child_pid == 0)
+	{
+		if (execve(cmd[0], cmd, NULL) == -1)
+		{
+			perror("Error");
+			exit(-1);
+		}
+	}
+	else
+		wait(&status);
+
 	return (0);
 }
 
 
 /**
- * prompt_printer - This program prints the prompt if the
- * shell is in interactive mode
- *
- * Return: void
+ * main - main simple shell
+ * @argc: number of arguments
+ * @argv: list of command line arguments
+ * Return: Always 0, -1 on error.
  */
-void prompt_printer(void)
-{
-	if ((isatty(STDIN_FILENO) == 1) && (isatty(STDOUT_FILENO) == 1))
-		flags.interactive = 1;
-	if (flags.interactive)
-		write(STDERR_FILENO, "$ ", 2);
-}
 
-/**
- * handle_sig - Allows ctrl+C to be printed by the shell
- * @n: signum
- *
- * Return: void
- */
-void handle_sig(int n __attribute__((unused)))
+int main(int argc, char **argv)
 {
-	write(STDERR_FILENO, "\n", 1);
-	write(STDERR_FILENO, "$ ", 2);
-}
 
+	int response;
+	char **tokens;
+	size_t bufsize = BUFSIZ;
+	int isPipe = 0;
+	char *buffer;
 
-/**
- * cmd_type - Checks the command whether its a built-in or executable
- * with a pathname
- * @cmd: array of pointers to command line arguments
- * @b: lineptr returned by getline function
- *
- * Return: 1 if the command is executed, 0 otherwise
- */
-int cmd_type(char **cmd, char *b)
-{
-	if (is_builtin(cmd, b))
+	if (argc >= 2)
 	{
-		return (1);
+		/*TODO: Handle cases where there is no argument, only the command*/
+		if (execve(argv[1], argv, NULL) == -1)
+		{
+			perror("Error");
+			exit(-1);
+		}
+		return (0);
 	}
-	else if (**cmd == '/')
+
+	buffer = (char *)malloc(bufsize * sizeof(char));
+	if (buffer == NULL)
 	{
-		exec_cmd(cmd[0], cmd);
-		return (1);
+		perror("Unable to allocate buffer");
+		exit(1);
 	}
+
+	do {
+		if (isatty(fileno(stdin)))
+		{
+			isPipe = 1;
+			_puts("cisfun#: ");
+		}
+
+		getline(&buffer, &bufsize, stdin);
+		buffer[_strlen(buffer) - 1] = '\0';
+		tokens = stringToTokens(buffer);
+		response = execute(tokens);
+	} while (isPipe && response != -1);
+
 	return (0);
 }
